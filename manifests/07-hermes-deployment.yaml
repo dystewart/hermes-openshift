@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+  namespace: hermes
+  labels:
+    app: hermes-agent
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hermes-agent
+      component: agent
+  template:
+    metadata:
+      labels:
+        app: hermes-agent
+        component: agent
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: hermes
+        image: quay.io/aicatalyst/hermes-agent:latest
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        # Run gateway service instead of default help command
+        command: ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main"]
+        args: ["gateway"]
+        envFrom:
+        - configMapRef:
+            name: hermes-config
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: data
+          mountPath: /opt/data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: hermes-data

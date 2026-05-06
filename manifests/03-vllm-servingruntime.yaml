@@ -1,0 +1,45 @@
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: vllm-cuda-runtime
+  namespace: hermes
+  labels:
+    app: hermes-agent
+    component: vllm
+spec:
+  containers:
+  - name: kserve-container
+    image: quay.io/modh/vllm@sha256:3ea9df1a9c8e1c22e1097dd8c1be97e2ca91dceef6ac66bce5f3e2bd5d04b7f8
+    args:
+    - --port=8080
+    - --model=/mnt/models
+    - --served-model-name={{.Name}}
+    - --distributed-executor-backend=mp
+    - --tensor-parallel-size=1
+    env:
+    - name: HF_HOME
+      value: /tmp/hf_home
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+    resources:
+      requests:
+        cpu: "6"
+        memory: 24Gi
+        nvidia.com/gpu: "1"
+      limits:
+        cpu: "6"
+        memory: 24Gi
+        nvidia.com/gpu: "1"
+    volumeMounts:
+    - name: shm
+      mountPath: /dev/shm
+  multiModel: false
+  supportedModelFormats:
+  - autoSelect: true
+    name: vLLM
+  volumes:
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: 12Gi

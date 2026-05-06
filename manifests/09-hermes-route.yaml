@@ -1,0 +1,19 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: hermes-agent
+  namespace: hermes
+  labels:
+    app: hermes-agent
+    component: agent
+spec:
+  to:
+    kind: Service
+    name: hermes-agent
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

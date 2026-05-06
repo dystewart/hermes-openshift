@@ -1,0 +1,112 @@
+# UBI 9 based Dockerfile for Hermes Agent on OpenShift AI
+# Based on Red Hat Universal Base Image 9 for enterprise deployment
+
+FROM registry.access.redhat.com/ubi9/ubi:latest AS base
+
+# Disable Python stdout buffering
+ENV PYTHONUNBUFFERED=1
+
+# Store Playwright browsers outside volume mount
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
+
+# Install system dependencies
+# Note: UBI uses dnf instead of apt-get
+# ripgrep and ffmpeg not available in UBI repos - install alternatives or skip
+RUN dnf install -y \
+    python3.11 \
+    python3.11-devel \
+    python3.11-pip \
+    gcc \
+    gcc-c++ \
+    make \
+    git \
+    grep \
+    procps-ng \
+    openssh-clients \
+    libffi-devel \
+    ca-certificates \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
+
+# Install Node.js 20.x from NodeSource (curl-minimal already present in UBI)
+RUN curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - \
+    && dnf install -y nodejs \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf
+
+# Note: ripgrep and ffmpeg excluded (not in UBI repos)
+# - ripgrep: using standard grep instead
+# - ffmpeg: audio features may not work without this (can install from EPEL if needed)
+
+# Note: Skipping uv due to QEMU segfault on macOS cross-platform builds
+# Will use pip directly instead
+
+# Create non-root user (OpenShift will override UID at runtime)
+# Using UID 1001 (OpenShift default range starts at 1000000000 but this is for local testing)
+RUN useradd -u 1001 -m -d /opt/data hermes
+
+WORKDIR /opt/hermes
+
+# ---------- Layer-cached dependency install ----------
+# Copy package manifests first for better caching
+COPY package.json package-lock.json ./
+COPY web/package.json web/package-lock.json web/
+COPY ui-tui/package.json ui-tui/package-lock.json ui-tui/
+COPY ui-tui/packages/hermes-ink/package.json ui-tui/packages/hermes-ink/package-lock.json ui-tui/packages/hermes-ink/
+
+RUN npm install --prefer-offline --no-audit && \
+    npx playwright install chromium && \
+    (cd web && npm install --prefer-offline --no-audit) && \
+    (cd ui-tui && npm install --prefer-offline --no-audit) && \
+    npm cache clean --force
+
+# ---------- Source code ----------
+COPY . .
+
+# Build browser dashboard and terminal UI assets
+RUN cd web && npm run build && \
+    cd ../ui-tui && npm run build && \
+    rm -rf node_modules/@hermes/ink && \
+    rm -rf packages/hermes-ink/node_modules && \
+    cp -R packages/hermes-ink node_modules/@hermes/ink && \
+    npm install --omit=dev --prefer-offline --no-audit --prefix node_modules/@hermes/ink && \
+    rm -rf node_modules/@hermes/ink/node_modules/react && \
+    node --input-type=module -e "await import('@hermes/ink')"
+
+# ---------- Permissions for OpenShift ----------
+# Make install dir readable by arbitrary UID (OpenShift security requirement)
+RUN chown -R 1001:0 /opt/hermes && \
+    chmod -R a+rX /opt/hermes && \
+    chmod -R g=u /opt/hermes
+
+# ---------- Python virtualenv ----------
+RUN python3.11 -m venv /opt/hermes/venv && \
+    . /opt/hermes/venv/bin/activate && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -e ".[all,messaging]"
+
+# Make venv accessible to arbitrary UID
+RUN chmod -R a+rX /opt/hermes/venv && \
+    chgrp -R 0 /opt/hermes/venv && \
+    chmod -R g=u /opt/hermes/venv
+
+# ---------- Runtime ----------
+ENV HERMES_WEB_DIST=/opt/hermes/hermes_cli/web_dist
+ENV HERMES_HOME=/opt/data
+ENV PATH="/opt/hermes/venv/bin:/opt/data/.local/bin:${PATH}"
+
+# OpenShift mounts volumes with group ownership, not user
+# Ensure /opt/data can be written by group 0 (root group)
+RUN mkdir -p /opt/data && \
+    chgrp -R 0 /opt/data && \
+    chmod -R g=u /opt/data
+
+VOLUME [ "/opt/data" ]
+
+# OpenShift runs containers with random UID in range 1000000000-2147483647
+# but always with GID 0 (root group). Don't specify USER directive.
+# The entrypoint should handle arbitrary UID.
+
+# Use exec form to avoid shell wrapper
+ENTRYPOINT ["/opt/hermes/venv/bin/python", "-m", "hermes_cli.main"]
+CMD ["--help"]

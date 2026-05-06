@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+  namespace: hermes
+  labels:
+    app: hermes-agent
+    component: config
+data:
+  # vLLM endpoint configuration
+  OPENAI_BASE_URL: "http://hermes-llm-predictor.hermes.svc.cluster.local:8080/v1"
+  LLM_MODEL: "hermes-llm"
+  HERMES_HOME: "/opt/data"
+  # Gateway configuration
+  GATEWAY_ALLOW_ALL_USERS: "true"
+  GATEWAY_PORT: "8080"
