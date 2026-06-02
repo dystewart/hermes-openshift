@@ -11,39 +11,15 @@ Deploy [Hermes Agent](https://github.com/NousResearch/hermes-agent), the self-im
 - Complete deployment manifests with vLLM setup
 
 **Architecture:**
-```
-┌──────────────────────────────────────────────────────────┐
-│  OpenShift AI Cluster                                    │
-│                                                          │
-│  ┌──────────────────────────────────────────────┐       │
-│  │  vLLM InferenceService (KServe)              │       │
-│  │  - Model: Qwen/Qwen2.5-3B-Instruct           │       │
-│  │  - GPU: 1x NVIDIA                            │       │
-│  │  - API: OpenAI-compatible /v1/chat/...       │       │
-│  └──────────────────┬───────────────────────────┘       │
-│                     │                                    │
-│                     ▼                                    │
-│  ┌──────────────────────────────────────────────┐       │
-│  │  Hermes Agent Pod (UBI 9 Python 3.11)        │       │
-│  │                                               │       │
-│  │  Gateway HTTP Server (Port 8080)             │       │
-│  │  ├─ GET  /health  → Liveness/Readiness       │       │
-│  │  ├─ POST /telegram → Telegram webhooks       │       │
-│  │  ├─ POST /discord  → Discord webhooks        │       │
-│  │  └─ POST /api      → HTTP API                │       │
-│  │                                               │       │
-│  │  Agent Core (Learning Loop)                  │       │
-│  │  ├─ Skills system (procedural memory)        │       │
-│  │  ├─ Honcho (persistent user modeling)        │       │
-│  │  ├─ Tool executor (40+ tools)                │       │
-│  │  └─ Cron scheduler (automations)             │       │
-│  │                                               │       │
-│  │  Volume: /opt/data (10Gi PVC)                │       │
-│  └──────────────────────────────────────────────┘       │
-│                                                          │
-│  Service: hermes-agent.hermes.svc.cluster.local:8080    │
-└──────────────────────────────────────────────────────────┘
-```
+
+![Hermes Agent on OpenShift AI](diagram-hermes-architecture.mmd)
+
+The deployment consists of:
+- **vLLM InferenceService (KServe):** GPU-accelerated model serving with OpenAI-compatible API
+- **Hermes Agent Pod:** UBI 9 container with gateway, agent core, and persistent storage
+- **Gateway HTTP Server:** Multi-platform messaging endpoints (Telegram, Discord, HTTP API)
+- **Agent Core:** Learning loop with skills system, Honcho user modeling, and cron scheduler
+- **PersistentVolumeClaim (10Gi):** Durable storage for skills, memories, and user models
 
 ## Quick Start
 

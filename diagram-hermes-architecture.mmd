@@ -1,0 +1,31 @@
+graph TB
+    subgraph cluster["OpenShift AI Cluster"]
+        subgraph vllm["vLLM InferenceService (KServe)"]
+            model["Model: Qwen/Qwen2.5-7B-Instruct<br/>Runtime: vLLM v0.13.0 (CUDA)"]
+            gpu["GPU: 1x NVIDIA"]
+            api["API: OpenAI-compatible /v1/chat/..."]
+        end
+
+        vllm -->|"http://hermes-llm:8080/v1"| hermes
+
+        subgraph hermes["Hermes Agent Pod (UBI 9 Python 3.11)"]
+            gateway["Gateway HTTP Server (Port 8080)<br/>GET /health<br/>POST /telegram<br/>POST /discord<br/>POST /api"]
+            core["Agent Core (Learning Loop)<br/>Skills: Procedural memory<br/>Honcho: User models<br/>Cron: Scheduled tasks"]
+            storage["Persistent Storage<br/>SQLite + FTS5 search<br/>Skill registry"]
+        end
+    end
+
+    external["External Clients<br/>(Telegram, Discord, HTTP)"] -->|HTTPS| route["OpenShift Route"]
+    route --> gateway
+
+    style cluster fill:#f5f5f5,stroke:#333,stroke-width:2px
+    style vllm fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style hermes fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style model fill:#fff,stroke:#666
+    style gpu fill:#fff,stroke:#666
+    style api fill:#fff,stroke:#666
+    style gateway fill:#fff,stroke:#666
+    style core fill:#fff,stroke:#666
+    style storage fill:#fff,stroke:#666
+    style external fill:#fff,stroke:#666
+    style route fill:#fff,stroke:#666
