@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+  namespace: hermes
+  labels:
+    app: hermes-agent
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hermes-agent
+      component: agent
+  template:
+    metadata:
+      labels:
+        app: hermes-agent
+        component: agent
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: hermes
+        image: quay.io/dystewar/hermes
+        imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        command:
+          - /opt/hermes/venv/bin/python
+          - -m
+          - hermes_cli.main
+        args:
+          - gateway
+        envFrom:
+          - configMapRef:
+              name: hermes-env
+        env:
+          - name: PYTHONUNBUFFERED
+            value: "1"
+        ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+        volumeMounts:
+          - name: data
+            mountPath: /opt/data
+          - name: hermes-config
+            mountPath: /opt/data/config.yaml
+            subPath: config.yaml
+          - name: openai-api-key
+            mountPath: /opt/data/.env
+            subPath: .env
+            readOnly: true
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-data
+        - name: hermes-config
+          configMap:
+            name: hermes-config
+        - name: openai-api-key
+          secret:
+            secretName: openai-api-key

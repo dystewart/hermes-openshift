@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-config
+data:
+  config.yaml: |
+    model:
+      provider: openai-api
+      default: gpt-5.5

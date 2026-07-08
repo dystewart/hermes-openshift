@@ -52,6 +52,12 @@ htmlcov/
 secrets/
 .env
 .env.local
+CLAUDE.md
+
+# Sensitive manifests (API keys, tokens)
+manifests/hermes.env
+manifests/*.env
+*.env
 
 # Hermes Agent
 .hermes/

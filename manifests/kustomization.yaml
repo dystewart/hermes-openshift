@@ -5,12 +5,8 @@ namespace: hermes
 
 resources:
 - 01-namespace.yaml
-- 02-vllm-storage.yaml
-- 03-vllm-servingruntime.yaml
-- 04-vllm-inferenceservice.yaml
-- 05-hermes-storage.yaml
-- 06-hermes-config.yaml
-- 07-hermes-deployment.yaml
-- 08-hermes-service.yaml
-# Uncomment to enable external access:
-# - 09-hermes-route.yaml
+- 02-hermes-storage.yaml
+- 03-hermes-config.yaml
+- 04-hermes-deployment.yaml
+- 05-hermes-service.yaml
+- 06-hermes-env.yaml
