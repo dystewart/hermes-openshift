@@ -13,6 +13,6 @@ spec:
     component: agent
   ports:
   - name: http
-    port: 8080
-    targetPort: 8080
+    port: 9119
+    targetPort: 9119
     protocol: TCP
