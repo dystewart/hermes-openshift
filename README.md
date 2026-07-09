@@ -34,9 +34,12 @@ Deploy [Hermes Agent](https://github.com/NousResearch/hermes-agent), the self-im
 git clone https://github.com/aicatalyst-team/hermes-openshift
 cd hermes-openshift
 
-# Create OpenAI API key secret
-cat > hermes.env <<EOF
-OPENAI_API_KEY=sk-your-api-key-here
+# Create OpenAI API key secret & creds for hermes web gui
+cat > hermes.env <<'EOF'
+OPENAI_API_KEY=your-openai-codex-key
+HERMES_DASHBOARD_BASIC_AUTH_USERNAME={REPLACE}
+HERMES_DASHBOARD_BASIC_AUTH_PASSWORD={REPLACE}
+HERMES_DASHBOARD_BASIC_AUTH_SECRET={REPLACE; use openssl rand -base64 32}
 EOF
 
 # Consume the api key in a secret
