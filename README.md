@@ -7,6 +7,7 @@ Deploy [Hermes Agent](https://github.com/NousResearch/hermes-agent), the self-im
 - Multi-platform messaging gateway (Telegram, Discord, Slack, HTTP API)
 - OpenShift Security Context Constraint (`restricted-v2`) compliant
 - Kustomize-based deployment manifests
+- Hermes GUI dashboard
 - Persistent storage for skills, memories, and user models
 - Integration ready for vLLM or any OpenAI-compatible API
 
@@ -59,6 +60,14 @@ oc get pods -n hermes -w
 NAME                            READY   STATUS    RESTARTS   AGE
 hermes-agent-7d9f8b5c4d-x9z2k   1/1     Running   0          30s
 ```
+
+Get the route to your Hermes dashboard:
+
+```
+echo "https://$(oc -n hermes get route hermes-dashboard -o jsonpath='{.spec.host}')"
+```
+
+Log in using `HERMES_DASHBOARD_BASIC_AUTH_USERNAME` and `HERMES_DASHBOARD_BASIC_AUTH_PASSWORD`
 
 ## Usage
 
@@ -153,6 +162,3 @@ The `examples/` directory contains:
 - **Documentation:** https://hermes-agent.nousresearch.com/docs/
 - **Skills Hub:** https://agentskills.io
 - **Red Hat OpenShift:** https://www.redhat.com/en/technologies/cloud-computing/openshift
-
-
-**Maintained by:** [Red Hat AI Catalyst Team](https://github.com/aicatalyst-team)
