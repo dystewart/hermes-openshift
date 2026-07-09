@@ -10,3 +10,4 @@ resources:
 - 04-hermes-deployment.yaml
 - 05-hermes-service.yaml
 - 06-hermes-env.yaml
+- 07-hermes-dashboard-route.yaml
