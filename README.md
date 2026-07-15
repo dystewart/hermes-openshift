@@ -32,7 +32,7 @@ Deploy [Hermes Agent](https://github.com/NousResearch/hermes-agent), the self-im
 
 ```bash
 # Clone repository
-git clone https://github.com/aicatalyst-team/hermes-openshift
+git clone git@github.com:dystewart/hermes-openshift.git
 cd hermes-openshift
 
 # Create OpenAI API key secret & creds for hermes web gui
